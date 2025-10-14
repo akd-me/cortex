@@ -1,0 +1,258 @@
+/* Neo-Brutalist Design System - Global Styles */
+
+/* CSS Reset and Base Styles */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-base);
+  line-height: 1.4;
+  color: var(--color-text);
+  background-color: var(--color-background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Neo-Brutalist Design System Variables */
+:root {
+  /* Core Colors - Neo-Brutalist Palette (Light Theme) */
+  --color-background: #ffffff;
+  --color-background-soft: #f8f8f8;
+  --color-background-mute: #f0f0f0;
+  
+  --color-border: #000000;
+  --color-border-hover: #333333;
+  --color-border-light: #cccccc;
+  
+  --color-heading: #000000;
+  --color-text: #000000;
+  --color-text-muted: #666666;
+  --color-text-light: #999999;
+  
+  --color-primary: #000000;
+  --color-primary-hover: #333333;
+  --color-primary-light: #f0f0f0;
+  --color-primary-light-hover: #e0e0e0;
+  
+  --color-accent: #14b8a6; /* Teal */
+  --color-accent-hover: #0f9488;
+  --color-accent-light: #ccfbf1;
+  --color-accent-dark: #0d9488;
+  
+  --color-secondary: #666666;
+  --color-secondary-hover: #4d4d4d;
+  
+  --color-success: #14b8a6;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #3b82f6;
+}
+
+/* Dark Theme Variables */
+[data-theme="dark"] {
+  /* Core Colors - Dark Theme */
+  --color-background: #0a0a0a;
+  --color-background-soft: #1a1a1a;
+  --color-background-mute: #2a2a2a;
+  
+  --color-border: #ffffff;
+  --color-border-hover: #cccccc;
+  --color-border-light: #404040;
+  
+  --color-heading: #ffffff;
+  --color-text: #ffffff;
+  --color-text-muted: #a0a0a0;
+  --color-text-light: #666666;
+  
+  --color-primary: #ffffff;
+  --color-primary-hover: #cccccc;
+  --color-primary-light: #2a2a2a;
+  --color-primary-light-hover: #404040;
+  
+  --color-accent: #14b8a6; /* Teal - kept as requested */
+  --color-accent-hover: #0f9488;
+  --color-accent-light: #0d9488;
+  --color-accent-dark: #0f9488;
+  
+  --color-secondary: #a0a0a0;
+  --color-secondary-hover: #cccccc;
+  
+  --color-success: #14b8a6;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #3b82f6;
+}
+
+/* Auto dark mode based on system preference */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    /* Core Colors - Dark Theme */
+    --color-background: #0a0a0a;
+    --color-background-soft: #1a1a1a;
+    --color-background-mute: #2a2a2a;
+    
+    --color-border: #ffffff;
+    --color-border-hover: #cccccc;
+    --color-border-light: #404040;
+    
+    --color-heading: #ffffff;
+    --color-text: #ffffff;
+    --color-text-muted: #a0a0a0;
+    --color-text-light: #666666;
+    
+    --color-primary: #ffffff;
+    --color-primary-hover: #cccccc;
+    --color-primary-light: #2a2a2a;
+    --color-primary-light-hover: #404040;
+    
+    --color-accent: #14b8a6; /* Teal - kept as requested */
+    --color-accent-hover: #0f9488;
+    --color-accent-light: #0d9488;
+    --color-accent-dark: #0f9488;
+    
+    --color-secondary: #a0a0a0;
+    --color-secondary-hover: #cccccc;
+    
+    --color-success: #14b8a6;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    --color-info: #3b82f6;
+  }
+}
+
+/* Neo-Brutalist Spacing - More generous */
+:root {
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 0.75rem;
+  --spacing-md: 1.25rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 3rem;
+  --spacing-2xl: 4rem;
+  --spacing-3xl: 6rem;
+  
+  /* Neo-Brutalist Borders - Reduced thickness */
+  --border-width: 2px;
+  --border-width-thick: 3px;
+  --border-width-thin: 1px;
+  --border-radius: 0;
+  --border-radius-sm: 4px;
+  --border-radius-lg: 8px;
+  
+  /* Neo-Brutalist Shadows - Reduced intensity */
+  --shadow-brutal: 3px 3px 0px 0px var(--color-border);
+  --shadow-brutal-hover: 4px 4px 0px 0px var(--color-border);
+  --shadow-brutal-accent: 3px 3px 0px 0px var(--color-accent);
+  --shadow-brutal-accent-hover: 4px 4px 0px 0px var(--color-accent);
+  --shadow-brutal-danger: 3px 3px 0px 0px var(--color-danger);
+  
+  /* Typography - Bold and Clear */
+  --font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  
+  --font-size-xs: 0.625rem;
+  --font-size-sm: 0.75rem;
+  --font-size-base: 0.875rem;
+  --font-size-lg: 1rem;
+  --font-size-xl: 1.125rem;
+  --font-size-2xl: 1.25rem;
+  --font-size-3xl: 1.5rem;
+  --font-size-4xl: 1.875rem;
+  --font-size-5xl: 2.25rem;
+  
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  
+  /* Transitions - Sharp and Immediate */
+  --transition-fast: 0.1s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+  
+  /* Layout */
+  --section-gap: 4rem;
+  --container-max-width: 1200px;
+  --sidebar-width: 280px;
+  --sidebar-width-collapsed: 80px;
+}
+
+/* Global utility classes */
+.brutalist-border {
+  border: var(--border-width) solid var(--color-border) !important;
+}
+
+.brutalist-shadow {
+  box-shadow: var(--shadow-brutal) !important;
+}
+
+.brutalist-shadow-hover:hover {
+  box-shadow: var(--shadow-brutal-hover) !important;
+  transform: translate(-2px, -2px) !important;
+}
+
+.brutalist-accent {
+  border-color: var(--color-accent) !important;
+  box-shadow: var(--shadow-brutal-accent) !important;
+}
+
+.brutalist-accent-hover:hover {
+  box-shadow: var(--shadow-brutal-accent-hover) !important;
+  transform: translate(-2px, -2px) !important;
+}
+
+/* Ensure all elements respect the design system */
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Remove default button styles */
+button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Ensure proper spacing for all containers */
+.container {
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg);
+}
+
+/* Full screen optimizations */
+@media (min-width: 1920px) {
+  .container {
+    max-width: none;
+    padding: 0 var(--spacing-md);
+  }
+  
+  /* Reduce section gaps in full screen */
+  .section-gap {
+    gap: var(--spacing-lg);
+  }
+}
+
+/* Global text styles */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+p {
+  margin: 0;
+  line-height: 1.5;
+}
