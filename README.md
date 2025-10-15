@@ -25,10 +25,10 @@ Cortex allows you to:
 ```
 cortex/
 ├── app/                    # FastAPI backend
-│   ├── models/            # SQLAlchemy & Pydantic models
-│   ├── routes/            # API endpoints
-│   ├── services/          # Business logic
-│   ├── database/          # Database connection
+│   ├── models/            # Pydantic models (LanceDB-based)
+│   ├── routes/            # API endpoints (enhanced with semantic search)
+│   ├── services/          # Business logic (LanceDB + embeddings)
+│   ├── database/          # LanceDB connection & management
 │   ├── servers/           # MCP server implementation
 │   ├── middleware/        # CORS and other middleware
 │   ├── helpers/           # Utility functions
@@ -55,12 +55,21 @@ cortex/
 ## 🚀 Features
 
 ### Core Functionality
-- **Docker-based Storage**: SQLite database in persistent Docker volume
-- **Context Management**: Create, read, update, delete context items
+- **Vector Database Storage**: LanceDB vector database with embeddings in persistent Docker volume
+- **Context Management**: Create, read, update, delete context items with automatic embedding generation
 - **Project Organization**: Group contexts by projects
-- **Full-Text Search**: Search through titles and content
+- **Advanced Search**: Three search modes - semantic, keyword, and hybrid search
+- **Semantic Search**: AI-powered vector similarity search using sentence-transformers
 - **Tag System**: Categorize contexts with tags
 - **Persistent Data**: Data survives container restarts
+
+### 🔍 Advanced Search Capabilities
+- **Semantic Search**: Find context by meaning using AI embeddings (384-dimensional vectors)
+- **Keyword Search**: Traditional text-based search through titles and content
+- **Hybrid Search**: Combines semantic and keyword search with configurable weights
+- **Search Types**: Choose between semantic, keyword, or hybrid search modes
+- **Filtering**: Filter by project, content type, tags, and active status
+- **Performance**: Sub-second search results with execution time tracking
 
 ### MCP Server
 - **FastMCP Integration**: Modern MCP server implementation using FastMCP framework
@@ -91,8 +100,10 @@ cortex/
 
 ### Backend
 - **FastAPI** - Modern Python web framework
-- **SQLAlchemy** - Database ORM
-- **SQLite** - Local database
+- **LanceDB** - Vector database for embeddings and semantic search
+- **Sentence Transformers** - AI embeddings generation (all-MiniLM-L6-v2)
+- **PyTorch** - Deep learning framework for embeddings
+- **Pandas** - Data manipulation and analysis
 - **Uvicorn** - ASGI server
 - **FastMCP** - MCP server framework
 
@@ -113,6 +124,9 @@ cortex/
 - **Docker Compose** 2.0+
 - **Node.js** 20.19+ or 22.12+ (for frontend development)
 - **pnpm** (recommended) or npm (for frontend development)
+- **Python** 3.8+ (for local development)
+- **PyTorch** (automatically installed with requirements.txt)
+- **Sentence Transformers** (automatically installed with requirements.txt)
 
 ## 🚀 Quick Start
 
@@ -209,12 +223,15 @@ Add to your Claude Desktop configuration:
 ## 📚 API Endpoints
 
 ### Context Items
-- `POST /api/context/items` - Create context item
+- `POST /api/context/items` - Create context item with automatic embedding generation
 - `GET /api/context/items` - List context items with pagination
 - `GET /api/context/items/{id}` - Get specific context item
-- `PUT /api/context/items/{id}` - Update context item
-- `DELETE /api/context/items/{id}` - Delete context item
-- `POST /api/context/items/search` - Search context items with filters
+- `PUT /api/context/items/{id}` - Update context item (regenerates embeddings if content changed)
+- `DELETE /api/context/items/{id}` - Soft delete context item
+- `POST /api/context/items/search` - Enhanced search with semantic, keyword, and hybrid modes
+- `GET /api/context/items/semantic-search` - Semantic vector similarity search
+- `GET /api/context/items/keyword-search` - Traditional keyword search
+- `GET /api/context/items/hybrid-search` - Combined semantic + keyword search
 
 ### Projects
 - `POST /api/context/projects` - Create project
@@ -228,9 +245,15 @@ Add to your Claude Desktop configuration:
 - `GET /mcp/health` - MCP server health check
 - `GET /api/mcp/info` - MCP server information and configuration
 
+### Data Management
+- `GET /api/data/export` - Export all context data
+- `POST /api/data/import` - Import context data
+- `POST /api/data/wipe` - Wipe all data (development only)
+- `GET /api/data/info` - Database information and statistics
+
 ### Health & Stats
 - `GET /health` - Application health status
-- `GET /api/context/stats` - Context statistics
+- `GET /api/context/stats` - Context statistics with embedding information
 
 ### Frontend Routes
 - `GET /` - Dashboard view
@@ -242,7 +265,8 @@ Add to your Claude Desktop configuration:
 
 ### Docker Volume
 - **Location**: Docker volume `cortex_data`
-- **Type**: SQLite database at `/data/context.db`
+- **Type**: LanceDB vector database at `/data/lancedb/`
+- **Embeddings**: 384-dimensional vectors using all-MiniLM-L6-v2 model
 - **Persistence**: Data survives container restarts
 - **Backup**: Volume can be backed up using Docker volume commands
 
@@ -254,10 +278,13 @@ Add to your Claude Desktop configuration:
   "content": "Context content here...",
   "content_type": "text",
   "tags": ["tag1", "tag2"],
+  "extra_metadata": {},
+  "source": "manual",
   "project_id": "my-project",
-  "metadata": {},
+  "is_active": true,
   "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:00:00Z"
+  "updated_at": "2024-01-01T00:00:00Z",
+  "vector": [0.1, 0.2, 0.3, ...] // 384-dimensional embedding
 }
 ```
 
@@ -391,15 +418,17 @@ volumes:
 - [x] MCP server implementation
 - [x] Vue.js frontend interface
 - [x] Docker containerization
-- [ ] Advanced search with filters
-- [ ] Data export/import functionality
+- [x] **Vector database migration (LanceDB)**
+- [x] **Semantic search with embeddings**
+- [x] **Hybrid search (semantic + keyword)**
+- [x] **Advanced search with filters**
+- [x] **Data export/import functionality**
 - [ ] Context templates
 - [ ] Bulk operations
 - [ ] Markdown editor improvements
 - [ ] Database encryption
 - [ ] Plugin system
 - [ ] Custom MCP tools
-- [ ] Kubernetes deployment
 - [ ] Multi-user support
 
 ## 📄 License
@@ -449,6 +478,11 @@ docker volume inspect cortex_cortex_data
 # Backup volume
 docker run --rm -v cortex_cortex_data:/data -v $(pwd):/backup alpine tar czf /backup/cortex-backup.tar.gz -C /data .
 ```
+
+**Embedding model issues:**
+- First startup may take longer as the sentence-transformers model downloads (~80MB)
+- Model is cached in Docker volume for faster subsequent starts
+- If embeddings fail, check Docker logs for model download errors
 
 ---
 

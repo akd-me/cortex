@@ -12,19 +12,18 @@ import {
   ChevronDownIcon,
   PencilIcon
 } from '@heroicons/vue/24/outline'
-import type { ContextItem } from '@/types/api'
-
-interface Project {
-  id: string
-  name: string
-  description?: string
-  is_active: boolean
-  created_at: string
-  updated_at?: string
-}
+import type { 
+  ContextItem, 
+  ContextProject, 
+  ContextSearchQuery, 
+  ContextSearchResult,
+  ContextItemCreate,
+  ContextItemUpdate
+} from '@/types/api'
+import { SearchType } from '@/types/api'
 
 const contextItems = ref<ContextItem[]>([])
-const projects = ref<Project[]>([])
+const projects = ref<ContextProject[]>([])
 const loading = ref(false)
 const showCreateForm = ref(false)
 const showEditForm = ref(false)
@@ -33,20 +32,42 @@ const showEditProjectDropdown = ref(false)
 const projectSearchQuery = ref('')
 const editProjectSearchQuery = ref('')
 
-// Search and sorting state
+// Enhanced search state
 const searchQuery = ref('')
+const searchType = ref<string>('hybrid')
+const searchResults = ref<ContextSearchResult | null>(null)
+const isSearching = ref(false)
+const showSearchFilters = ref(false)
+const selectedContentTypes = ref<string[]>([])
+const selectedTags = ref<string[]>([])
+const selectedProject = ref<string>('')
+const semanticWeight = ref(0.7)
+
+// Sorting state
 const sortField = ref<keyof ContextItem | null>(null)
 const sortDirection = ref<'asc' | 'desc'>('asc')
 
-const newContext = ref({
+const newContext = ref<ContextItemCreate>({
   title: '',
   content: '',
   content_type: 'text',
-  tags: '',
+  tags: [],
+  extra_metadata: {},
   project_id: ''
 })
 
-const editContext = ref({
+const newContextTagsString = ref('')
+
+interface EditContextForm {
+  id: number
+  title: string
+  content: string
+  content_type: string
+  tags: string
+  project_id: string
+}
+
+const editContext = ref<EditContextForm>({
   id: 0,
   title: '',
   content: '',
@@ -67,7 +88,10 @@ const fetchContextItems = async () => {
   try {
     const response = await fetch('/api/context/items?limit=50')
     if (response.ok) {
-      contextItems.value = await response.json()
+      const data = await response.json()
+      contextItems.value = data || []
+    } else {
+      console.error('Failed to fetch context items:', response.status, response.statusText)
     }
   } catch (error) {
     console.error('Error fetching context items:', error)
@@ -80,7 +104,10 @@ const fetchProjects = async () => {
   try {
     const response = await fetch('/api/context/projects')
     if (response.ok) {
-      projects.value = await response.json()
+      const data = await response.json()
+      projects.value = data || []
+    } else {
+      console.error('Failed to fetch projects:', response.status, response.statusText)
     }
   } catch (error) {
     console.error('Error fetching projects:', error)
@@ -89,9 +116,9 @@ const fetchProjects = async () => {
 
 const createContext = async () => {
   try {
-    const payload = {
+    const payload: ContextItemCreate = {
       ...newContext.value,
-      tags: newContext.value.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+      tags: newContext.value.tags && newContext.value.tags.length > 0 ? newContext.value.tags : []
     }
 
     const response = await fetch('/api/context/items', {
@@ -135,9 +162,11 @@ const resetForm = () => {
     title: '',
     content: '',
     content_type: 'text',
-    tags: '',
+    tags: [],
+    extra_metadata: {},
     project_id: ''
   }
+  newContextTagsString.value = ''
 }
 
 const openEditForm = (item: ContextItem) => {
@@ -163,12 +192,12 @@ const openEditForm = (item: ContextItem) => {
 
 const updateContext = async () => {
   try {
-    const payload = {
+    const payload: ContextItemUpdate = {
       title: editContext.value.title,
       content: editContext.value.content,
       content_type: editContext.value.content_type,
       tags: editContext.value.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-      project_id: editContext.value.project_id || null
+      project_id: editContext.value.project_id || undefined
     }
 
     const response = await fetch(`/api/context/items/${editContext.value.id}`, {
@@ -200,11 +229,108 @@ const resetEditForm = () => {
   editProjectSearchQuery.value = ''
 }
 
+// Enhanced search functionality
+const performSearch = async () => {
+  if (!searchQuery.value.trim()) {
+    searchResults.value = null
+    return
+  }
+
+  isSearching.value = true
+  try {
+    // Build query parameters for GET request
+    const params = new URLSearchParams({
+      query: searchQuery.value,
+      limit: '50',
+      offset: '0'
+    })
+
+    // Add optional filters
+    if (selectedContentTypes.value && selectedContentTypes.value.length > 0) {
+      selectedContentTypes.value.forEach(type => params.append('content_types', type))
+    }
+    if (selectedTags.value && selectedTags.value.length > 0) {
+      selectedTags.value.forEach(tag => params.append('tags', tag))
+    }
+    if (selectedProject.value) {
+      params.append('project_id', selectedProject.value)
+    }
+    if (searchType.value === 'hybrid') {
+      params.append('semantic_weight', semanticWeight.value.toString())
+    }
+
+    // Use specific endpoint based on search type
+    let endpoint = '/api/context/items/search'
+    if (searchType.value === 'semantic') {
+      endpoint = '/api/context/items/search/semantic'
+    } else if (searchType.value === 'keyword') {
+      endpoint = '/api/context/items/search/keyword'
+    } else if (searchType.value === 'hybrid') {
+      endpoint = '/api/context/items/search/hybrid'
+    }
+
+    const response = await fetch(`${endpoint}?${params.toString()}`)
+
+    if (response.ok) {
+      const data = await response.json()
+      searchResults.value = data
+    } else {
+      console.error('Search failed:', response.status, response.statusText)
+      const errorText = await response.text()
+      console.error('Error details:', errorText)
+    }
+  } catch (error) {
+    console.error('Error performing search:', error)
+  } finally {
+    isSearching.value = false
+  }
+}
+
+const clearSearch = () => {
+  searchQuery.value = ''
+  searchResults.value = null
+  selectedContentTypes.value = []
+  selectedTags.value = []
+  selectedProject.value = ''
+  semanticWeight.value = 0.7
+  searchType.value = 'hybrid'
+}
+
+const toggleSearchFilters = () => {
+  showSearchFilters.value = !showSearchFilters.value
+}
+
+// Get unique content types and tags for filters
+const availableContentTypes = computed(() => {
+  const types = new Set<string>()
+  contextItems.value.forEach(item => types.add(item.content_type || 'text'))
+  return Array.from(types)
+})
+
+const availableTags = computed(() => {
+  const tags = new Set<string>()
+  contextItems.value.forEach(item => {
+    if (item.tags && Array.isArray(item.tags)) {
+      item.tags.forEach(tag => tags.add(tag))
+    }
+  })
+  return Array.from(tags)
+})
+
+// Helper function to update tags from string input
+const updateTagsFromString = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const tagString = input.value
+  newContext.value.tags = tagString.split(',').map(tag => tag.trim()).filter(tag => tag)
+}
+
 const formatDate = (dateString: string) => {
+  if (!dateString) return ''
   return new Date(dateString).toLocaleDateString()
 }
 
 const truncateContent = (content: string, maxLength: number = 150) => {
+  if (!content) return ''
   return content.length > maxLength ? content.substring(0, maxLength) + '...' : content
 }
 
@@ -230,33 +356,22 @@ const filteredEditProjects = computed(() => {
 
 // Filtered and sorted context items
 const filteredContextItems = computed(() => {
-  let filtered = contextItems.value
+  // Use search results if available, otherwise use all context items
+  let filtered = searchResults.value ? searchResults.value.items : contextItems.value
 
-  // Apply search filter
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(item => 
-      item.title.toLowerCase().includes(query) ||
-      item.content.toLowerCase().includes(query) ||
-      item.content_type.toLowerCase().includes(query) ||
-      item.tags.some(tag => tag.toLowerCase().includes(query)) ||
-      (item.project_id && item.project_id.toLowerCase().includes(query))
-    )
-  }
-
-  // Apply sorting
-  if (sortField.value) {
+  // Apply sorting (search results are already sorted by relevance, but we can still sort by other fields)
+  if (sortField.value && !searchResults.value) {
     filtered = [...filtered].sort((a, b) => {
       let aValue: any = a[sortField.value!]
       let bValue: any = b[sortField.value!]
 
       // Handle different data types
       if (sortField.value === 'created_at') {
-        aValue = new Date(aValue as string).getTime()
-        bValue = new Date(bValue as string).getTime()
+        aValue = aValue ? new Date(aValue as string).getTime() : 0
+        bValue = bValue ? new Date(bValue as string).getTime() : 0
       } else if (sortField.value === 'tags') {
-        aValue = (aValue as string[]).join(', ')
-        bValue = (bValue as string[]).join(', ')
+        aValue = (aValue as string[] || []).join(', ')
+        bValue = (bValue as string[] || []).join(', ')
       } else if (typeof aValue === 'string' && typeof bValue === 'string') {
         aValue = aValue.toLowerCase()
         bValue = bValue.toLowerCase()
@@ -275,7 +390,7 @@ const filteredContextItems = computed(() => {
   return filtered
 })
 
-const selectProject = (project: Project) => {
+const selectProject = (project: ContextProject) => {
   newContext.value.project_id = project.id
   showProjectDropdown.value = false
   projectSearchQuery.value = project.name
@@ -286,7 +401,7 @@ const clearProject = () => {
   projectSearchQuery.value = ''
 }
 
-const selectEditProject = (project: Project) => {
+const selectEditProject = (project: ContextProject) => {
   editContext.value.project_id = project.id
   showEditProjectDropdown.value = false
   editProjectSearchQuery.value = project.name
@@ -369,16 +484,104 @@ const renderMarkdown = (content: string) => {
       </button>
     </div>
 
-    <!-- Search Bar -->
+    <!-- Enhanced Search Bar -->
     <div class="search-container">
-      <div class="search-input-wrapper">
-        <MagnifyingGlassIcon class="search-icon" />
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search context items..."
-          class="search-input"
-        />
+      <div class="search-main">
+        <div class="search-input-wrapper">
+          <MagnifyingGlassIcon class="search-icon" />
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search context items with semantic, keyword, or hybrid search..."
+            class="search-input"
+            @keyup.enter="performSearch"
+          />
+        </div>
+        <div class="search-controls">
+          <select v-model="searchType" class="search-type-select">
+            <option value="hybrid">Hybrid</option>
+            <option value="semantic">Semantic</option>
+            <option value="keyword">Keyword</option>
+          </select>
+          <button @click="performSearch" class="btn btn-primary search-btn" :disabled="isSearching">
+            {{ isSearching ? 'SEARCHING...' : 'SEARCH' }}
+          </button>
+          <button @click="clearSearch" class="btn btn-secondary" v-if="searchResults">
+            CLEAR
+          </button>
+          <button @click="toggleSearchFilters" class="btn btn-secondary">
+            {{ showSearchFilters ? 'HIDE FILTERS' : 'FILTERS' }}
+          </button>
+        </div>
+      </div>
+      
+      <!-- Search Filters -->
+      <div v-if="showSearchFilters" class="search-filters">
+        <div class="filter-row">
+          <div class="filter-group">
+            <label>Content Types:</label>
+            <div class="filter-checkboxes">
+              <label v-for="type in availableContentTypes" :key="type" class="filter-checkbox">
+                <input 
+                  type="checkbox" 
+                  :value="type" 
+                  v-model="selectedContentTypes"
+                />
+                {{ type.toUpperCase() }}
+              </label>
+            </div>
+          </div>
+          
+          <div class="filter-group">
+            <label>Tags:</label>
+            <div class="filter-checkboxes">
+              <label v-for="tag in availableTags.slice(0, 10)" :key="tag" class="filter-checkbox">
+                <input 
+                  type="checkbox" 
+                  :value="tag" 
+                  v-model="selectedTags"
+                />
+                {{ tag.toUpperCase() }}
+              </label>
+            </div>
+          </div>
+          
+          <div class="filter-group">
+            <label>Project:</label>
+            <select v-model="selectedProject" class="filter-select">
+              <option value="">All Projects</option>
+              <option v-for="project in projects" :key="project.id" :value="project.id">
+                {{ project.name }}
+              </option>
+            </select>
+          </div>
+          
+          <div v-if="searchType === 'hybrid'" class="filter-group">
+            <label>Semantic Weight: {{ semanticWeight }}</label>
+            <input 
+              type="range" 
+              v-model="semanticWeight" 
+              min="0" 
+              max="1" 
+              step="0.1" 
+              class="filter-range"
+            />
+          </div>
+        </div>
+      </div>
+      
+      <!-- Search Results Info -->
+      <div v-if="searchResults" class="search-results-info">
+        <div class="results-stats">
+          <span class="results-count">{{ searchResults.total }} results</span>
+          <span class="search-type-badge">{{ searchResults.search_type.toUpperCase() }}</span>
+          <span v-if="searchResults.execution_time_ms" class="execution-time">
+            {{ searchResults.execution_time_ms.toFixed(2) }}ms
+          </span>
+        </div>
+        <div class="results-query">
+          Query: "{{ searchResults.query }}"
+        </div>
       </div>
     </div>
 
@@ -451,10 +654,11 @@ const renderMarkdown = (content: string) => {
               <label for="tags">TAGS (comma-separated)</label>
               <input
                 id="tags"
-                v-model="newContext.tags"
+                v-model="newContextTagsString"
                 type="text"
                 class="form-input"
                 placeholder="tag1, tag2, tag3"
+                @input="updateTagsFromString"
               />
             </div>
 
@@ -554,8 +758,8 @@ const renderMarkdown = (content: string) => {
                   required
                   class="form-textarea content-textarea"
                   :class="`content-type-${editContext.content_type}`"
-                  :placeholder="getContentPlaceholder(editContext.content_type)"
-                  :rows="getContentRows(editContext.content_type)"
+                  :placeholder="getContentPlaceholder(editContext.content_type || 'text')"
+                  :rows="getContentRows(editContext.content_type || 'text')"
                   @input="handleEditContentInput"
                 ></textarea>
               </div>
@@ -563,7 +767,7 @@ const renderMarkdown = (content: string) => {
                 <div class="content-preview">
                   <div class="preview-header">
                     <span class="preview-label">PREVIEW</span>
-                    <span class="content-type-indicator">{{ editContext.content_type.toUpperCase() }}</span>
+                    <span class="content-type-indicator">{{ (editContext.content_type || 'text').toUpperCase() }}</span>
                   </div>
                   <div class="preview-content" :class="`preview-${editContext.content_type}`">
                     <pre v-if="editContext.content_type === 'code' || editContext.content_type === 'json'" class="code-preview">{{ editContext.content }}</pre>
@@ -739,17 +943,17 @@ const renderMarkdown = (content: string) => {
               </div>
             </td>
             <td class="type-cell">
-              <span class="type-badge">{{ item.content_type.toUpperCase() }}</span>
+              <span class="type-badge">{{ (item.content_type || 'text').toUpperCase() }}</span>
             </td>
             <td class="content-cell">
               <div class="content-preview">{{ truncateContent(item.content, 100) }}</div>
             </td>
             <td class="tags-cell">
-              <div v-if="item.tags.length > 0" class="tags-list">
+              <div v-if="item.tags && item.tags.length > 0" class="tags-list">
                 <span v-for="tag in item.tags.slice(0, 2)" :key="tag" class="tag">
                   {{ tag.toUpperCase() }}
                 </span>
-                <span v-if="item.tags.length > 2" class="more-tags">
+                <span v-if="item.tags && item.tags.length > 2" class="more-tags">
                   +{{ item.tags.length - 2 }}
                 </span>
               </div>
@@ -1282,14 +1486,26 @@ const renderMarkdown = (content: string) => {
   color: var(--color-text-muted);
 }
 
-/* Search Container */
+/* Enhanced Search Container */
 .search-container {
   margin-bottom: var(--spacing-lg);
+  background-color: var(--color-background-soft);
+  border: var(--border-width) solid var(--color-border);
+  box-shadow: var(--shadow-brutal);
+  padding: var(--spacing-lg);
+}
+
+.search-main {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+  margin-bottom: var(--spacing-md);
 }
 
 .search-input-wrapper {
   position: relative;
-  max-width: 400px;
+  flex: 1;
+  max-width: 600px;
 }
 
 .search-icon {
@@ -1325,6 +1541,199 @@ const renderMarkdown = (content: string) => {
 .search-input:hover {
   transform: translate(-1px, -1px);
   box-shadow: var(--shadow-brutal-hover);
+}
+
+.search-controls {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.search-type-select {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width) solid var(--color-border);
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: var(--shadow-brutal);
+  cursor: pointer;
+}
+
+.search-type-select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-brutal-accent);
+}
+
+.search-btn {
+  min-width: 100px;
+}
+
+/* Search Filters */
+.search-filters {
+  border-top: var(--border-width) solid var(--color-border);
+  padding-top: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.filter-group label {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: var(--font-size-sm);
+}
+
+.filter-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--color-border);
+  background-color: var(--color-background);
+  box-shadow: var(--shadow-brutal);
+  transition: var(--transition-fast);
+}
+
+.filter-checkbox:hover {
+  background-color: var(--color-background-soft);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-brutal-hover);
+}
+
+.filter-checkbox input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+.filter-checkbox input[type="checkbox"]:checked + span {
+  color: var(--color-accent);
+}
+
+.filter-select {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width) solid var(--color-border);
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  box-shadow: var(--shadow-brutal);
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-brutal-accent);
+}
+
+.filter-range {
+  width: 100%;
+  height: 6px;
+  background-color: var(--color-background);
+  border: var(--border-width-thin) solid var(--color-border);
+  box-shadow: var(--shadow-brutal);
+  cursor: pointer;
+}
+
+.filter-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background-color: var(--color-accent);
+  border: var(--border-width-thin) solid var(--color-border);
+  box-shadow: var(--shadow-brutal);
+  cursor: pointer;
+}
+
+.filter-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background-color: var(--color-accent);
+  border: var(--border-width-thin) solid var(--color-border);
+  box-shadow: var(--shadow-brutal);
+  cursor: pointer;
+}
+
+/* Search Results Info */
+.search-results-info {
+  border-top: var(--border-width) solid var(--color-border);
+  padding-top: var(--spacing-md);
+  margin-top: var(--spacing-md);
+  background-color: var(--color-background);
+  padding: var(--spacing-md);
+  border: var(--border-width-thin) solid var(--color-border);
+  box-shadow: var(--shadow-brutal);
+}
+
+.results-stats {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.results-count {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-heading);
+  font-size: var(--font-size-lg);
+}
+
+.search-type-badge {
+  background-color: var(--color-accent);
+  color: white;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--color-border);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: var(--shadow-brutal-accent);
+}
+
+.execution-time {
+  background-color: var(--color-background-soft);
+  color: var(--color-text-muted);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--color-border);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: var(--shadow-brutal);
+  font-family: var(--font-family-mono);
+}
+
+.results-query {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-style: italic;
 }
 
 /* Table Styles */
@@ -1637,10 +2046,35 @@ const renderMarkdown = (content: string) => {
 
   .search-container {
     margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md);
+  }
+
+  .search-main {
+    flex-direction: column;
+    gap: var(--spacing-sm);
   }
 
   .search-input-wrapper {
     max-width: 100%;
+  }
+
+  .search-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .filter-row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .filter-checkboxes {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .filter-checkbox {
+    justify-content: flex-start;
   }
 
   .table-container {

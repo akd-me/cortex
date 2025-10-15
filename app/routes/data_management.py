@@ -1,26 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 import json
 import io
 from datetime import datetime
 
-from ..database.connection import get_db
-from ..services.context_service import ContextService
-from ..models.context import ContextItemResponse, ContextProjectResponse, ContextItemCreate, ContextProjectCreate
+from ..database.database_manager import get_context_service
+from ..models.lancedb_models import ContextItemResponse, ContextProjectResponse, ContextItemCreate, ContextProjectCreate
 
 router = APIRouter()
 
-def get_context_service(db: Session = Depends(get_db)) -> ContextService:
-    return ContextService(db)
-
 @router.get("/export")
-async def export_data(
-    service: ContextService = Depends(get_context_service)
-):
+async def export_data():
     """Export all context items and projects as JSON"""
     try:
+        service = get_context_service()
         # Get all context items (using get_context_items with high limit)
         context_items = service.get_context_items(limit=10000)
         projects = service.get_projects(limit=10000)
@@ -80,12 +74,10 @@ async def export_data(
         raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
 
 @router.post("/import")
-async def import_data(
-    file: UploadFile = File(...),
-    service: ContextService = Depends(get_context_service)
-):
+async def import_data(file: UploadFile = File(...)):
     """Import context items and projects from JSON file"""
     try:
+        service = get_context_service()
         # Validate file type
         if not file.filename.endswith('.json'):
             raise HTTPException(status_code=400, detail="Only JSON files are supported")
@@ -162,11 +154,10 @@ async def import_data(
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
 
 @router.get("/export/info")
-async def get_export_info(
-    service: ContextService = Depends(get_context_service)
-):
+async def get_export_info():
     """Get information about available data for export"""
     try:
+        service = get_context_service()
         context_items = service.get_context_items(limit=10000)
         projects = service.get_projects(limit=10000)
         
@@ -180,11 +171,10 @@ async def get_export_info(
         raise HTTPException(status_code=500, detail=f"Failed to get export info: {str(e)}")
 
 @router.delete("/wipe")
-async def wipe_database(
-    service: ContextService = Depends(get_context_service)
-):
+async def wipe_database():
     """Wipe all database content - DANGEROUS OPERATION"""
     try:
+        service = get_context_service()
         # Get counts before deletion for response
         context_items = service.get_context_items(limit=10000)
         projects = service.get_projects(limit=10000)
@@ -192,13 +182,13 @@ async def wipe_database(
         deleted_items = len(context_items)
         deleted_projects = len(projects)
         
-        # Delete all context items
+        # Hard delete all context items (permanently remove from database)
         for item in context_items:
-            service.delete_context_item(item.id)
+            service.hard_delete_context_item(item.id)
         
-        # Delete all projects
+        # Hard delete all projects (permanently remove from database)
         for project in projects:
-            service.delete_project(project.id)
+            service.hard_delete_project(project.id)
         
         return {
             "message": "Database wiped successfully",

@@ -7,25 +7,30 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Download and cache the sentence transformer model
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+
 # Copy application code
 COPY app/ ./app/
 COPY *.py ./
 
-# Create data directory for SQLite
-RUN mkdir -p /data
+# Create data directories
+RUN mkdir -p /data /data/lancedb
 
 # Expose ports
 EXPOSE 8000
 
 # Set environment variables
 ENV PYTHONPATH=/app
-ENV DATABASE_PATH=/data/context.db
+ENV LANCEDB_PATH=/data/lancedb
+ENV TRANSFORMERS_CACHE=/app/.cache/transformers
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

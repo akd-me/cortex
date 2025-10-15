@@ -9,14 +9,14 @@ try:
     # Try relative imports first (when run as module)
     from .config import settings
     from .middleware.cors import cors_middleware
-    from .routes import health, root, context, mcp_config, data_management
+    from .routes import health, root, mcp_config, data_management, enhanced_context
     from .logger import setup_logging
     from .servers.cortex_mcp.server import router as mcp_router
 except ImportError:
     # Fall back to absolute imports (when run directly)
     from config import settings
     from middleware.cors import cors_middleware
-    from routes import health, root, context, mcp_config, data_management
+    from routes import health, root, mcp_config, data_management, enhanced_context
     from logger import setup_logging
     from servers.cortex_mcp.server import router as mcp_router
 
@@ -37,7 +37,7 @@ app.add_middleware(CORSMiddleware, **cors_middleware)
 # Include routers
 app.include_router(root.router, tags=["root"])
 app.include_router(health.router, prefix="/health", tags=["health"])
-app.include_router(context.router, prefix="/api/context", tags=["context"])
+app.include_router(enhanced_context.router, prefix="/api/context", tags=["context"])
 app.include_router(data_management.router, prefix="/api/data", tags=["data-management"])
 app.include_router(mcp_config.router, tags=["mcp-config"])
 app.include_router(mcp_router, prefix="/mcp", tags=["mcp-server"])

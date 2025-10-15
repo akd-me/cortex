@@ -1,8 +1,9 @@
 """
 FastAPI Routes for Cortex MCP Server
 """
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from typing import Dict, Any
+import json
 
 # Create FastAPI router for MCP endpoints
 router = APIRouter()
@@ -73,11 +74,13 @@ def create_mcp_endpoint_handler(mcp_instance):
     Returns:
         The endpoint handler function
     """
-    async def mcp_endpoint(request: dict):
+    async def mcp_endpoint(request: Request):
         """Handle MCP requests with proper FastMCP integration"""
         try:
-            method = request.get("method", "")
-            request_id = request.get("id", 1)
+            # Parse the JSON body from the request
+            body = await request.json()
+            method = body.get("method", "")
+            request_id = body.get("id", 1)
             
             if method == "initialize":
                 return {
@@ -97,6 +100,9 @@ def create_mcp_endpoint_handler(mcp_instance):
                         }
                     }
                 }
+            elif method == "initialized":
+                # Handle initialized notification (no response needed)
+                return None
             elif method == "tools/list":
                 # Return predefined tool schemas
                 tools = [
@@ -200,7 +206,7 @@ def create_mcp_endpoint_handler(mcp_instance):
                 }
             elif method == "tools/call":
                 # Handle tool execution using FastMCP
-                params = request.get("params", {})
+                params = body.get("params", {})
                 tool_name = params.get("name", "")
                 arguments = params.get("arguments", {})
                 
@@ -275,7 +281,7 @@ def create_mcp_endpoint_handler(mcp_instance):
         except Exception as e:
             return {
                 "jsonrpc": "2.0",
-                "id": request.get("id", 1),
+                "id": body.get("id", 1),
                 "error": {
                     "code": -32603,
                     "message": f"Internal error: {str(e)}"

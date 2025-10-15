@@ -4,20 +4,20 @@ MCP Tools for Cortex Context Manager
 from typing import Dict, Any, List, Optional
 
 try:
-    from ...database.connection import get_db_context
-    from ...services.context_service import ContextService
-    from ...models.context import (
+    from ...database.database_manager import get_context_service
+    from ...models.lancedb_models import (
         ContextItemCreate, 
         ContextProjectCreate,
-        ContextSearchQuery
+        ContextSearchQuery,
+        SearchType
     )
 except ImportError:
-    from database.connection import get_db_context
-    from services.context_service import ContextService
-    from models.context import (
+    from database.database_manager import get_context_service
+    from models.lancedb_models import (
         ContextItemCreate, 
         ContextProjectCreate,
-        ContextSearchQuery
+        ContextSearchQuery,
+        SearchType
     )
 
 
@@ -44,30 +44,29 @@ def store_context(
         Dictionary with success status and created item details
     """
     try:
-        with get_db_context() as db:
-            service = ContextService(db)
-            
-            context_data = ContextItemCreate(
-                title=title,
-                content=content,
-                content_type=content_type,
-                tags=tags or [],
-                project_id=project_id,
-                extra_metadata=extra_metadata or {},
-                source="mcp_client"
-            )
-            
-            result = service.create_context_item(context_data)
-            
-            return {
-                "success": True,
-                "message": "Context stored successfully",
-                "data": {
-                    "id": result.id,
-                    "title": result.title,
-                    "created_at": result.created_at.isoformat()
-                }
+        service = get_context_service()
+        
+        context_data = ContextItemCreate(
+            title=title,
+            content=content,
+            content_type=content_type,
+            tags=tags or [],
+            project_id=project_id,
+            extra_metadata=extra_metadata or {},
+            source="mcp_client"
+        )
+        
+        result = service.create_context_item(context_data)
+        
+        return {
+            "success": True,
+            "message": "Context stored successfully",
+            "data": {
+                "id": result.id,
+                "title": result.title,
+                "created_at": result.created_at.isoformat()
             }
+        }
     except Exception as e:
         return {
             "success": False,
@@ -87,31 +86,30 @@ def retrieve_context(context_id: int) -> Dict[str, Any]:
         Dictionary with the context item details or error
     """
     try:
-        with get_db_context() as db:
-            service = ContextService(db)
-            context_item = service.get_context_item(context_id)
-            
-            if not context_item:
-                return {
-                    "success": False,
-                    "error": "Context not found",
-                    "message": f"No context found with ID {context_id}"
-                }
-            
+        service = get_context_service()
+        context_item = service.get_context_item(context_id)
+        
+        if not context_item:
             return {
-                "success": True,
-                "data": {
-                    "id": context_item.id,
-                    "title": context_item.title,
-                    "content": context_item.content,
-                    "content_type": context_item.content_type,
-                    "tags": context_item.tags,
-                    "extra_metadata": context_item.extra_metadata,
-                    "project_id": context_item.project_id,
-                    "created_at": context_item.created_at.isoformat(),
-                    "updated_at": context_item.updated_at.isoformat() if context_item.updated_at else None
-                }
+                "success": False,
+                "error": "Context not found",
+                "message": f"No context found with ID {context_id}"
             }
+        
+        return {
+            "success": True,
+            "data": {
+                "id": context_item.id,
+                "title": context_item.title,
+                "content": context_item.content,
+                "content_type": context_item.content_type,
+                "tags": context_item.tags,
+                "extra_metadata": context_item.extra_metadata,
+                "project_id": context_item.project_id,
+                "created_at": context_item.created_at.isoformat(),
+                "updated_at": context_item.updated_at.isoformat() if context_item.updated_at else None
+            }
+        }
     except Exception as e:
         return {
             "success": False,
@@ -141,41 +139,43 @@ def search_context(
         Dictionary with search results
     """
     try:
-        with get_db_context() as db:
-            service = ContextService(db)
-            
-            search_query = ContextSearchQuery(
-                query=query,
-                content_types=content_types,
-                tags=tags,
-                project_id=project_id,
-                limit=min(limit, 50),
-                offset=0
-            )
-            
-            items, total = service.search_context_items(search_query)
-            
-            results = []
-            for item in items:
-                results.append({
-                    "id": item.id,
-                    "title": item.title,
-                    "content": item.content[:500] + "..." if len(item.content) > 500 else item.content,
-                    "content_type": item.content_type,
-                    "tags": item.tags,
-                    "project_id": item.project_id,
-                    "created_at": item.created_at.isoformat()
-                })
-            
-            return {
-                "success": True,
-                "data": {
-                    "results": results,
-                    "total": total,
-                    "query": query,
-                    "limit": limit
-                }
+        service = get_context_service()
+        
+        search_query = ContextSearchQuery(
+            query=query,
+            search_type=SearchType.HYBRID,
+            content_types=content_types,
+            tags=tags,
+            project_id=project_id,
+            limit=min(limit, 50),
+            offset=0
+        )
+        
+        search_result = service.search_context_items(search_query)
+        items = search_result.items
+        total = search_result.total
+        
+        results = []
+        for item in items:
+            results.append({
+                "id": item.id,
+                "title": item.title,
+                "content": item.content[:500] + "..." if len(item.content) > 500 else item.content,
+                "content_type": item.content_type,
+                "tags": item.tags,
+                "project_id": item.project_id,
+                "created_at": item.created_at.isoformat()
+            })
+        
+        return {
+            "success": True,
+            "data": {
+                "results": results,
+                "total": total,
+                "query": query,
+                "limit": limit
             }
+        }
     except Exception as e:
         return {
             "success": False,
@@ -203,36 +203,35 @@ def list_contexts(
         Dictionary with list of context items
     """
     try:
-        with get_db_context() as db:
-            service = ContextService(db)
-            
-            items = service.get_context_items(
-                project_id=project_id,
-                content_type=content_type,
-                limit=min(limit, 50),
-                offset=offset
-            )
-            
-            results = []
-            for item in items:
-                results.append({
-                    "id": item.id,
-                    "title": item.title,
-                    "content_type": item.content_type,
-                    "tags": item.tags,
-                    "project_id": item.project_id,
-                    "created_at": item.created_at.isoformat()
-                })
-            
-            return {
-                "success": True,
-                "data": {
-                    "items": results,
-                    "count": len(results),
-                    "offset": offset,
-                    "limit": limit
-                }
+        service = get_context_service()
+        
+        items = service.get_context_items(
+            project_id=project_id,
+            content_type=content_type,
+            limit=min(limit, 50),
+            offset=offset
+        )
+        
+        results = []
+        for item in items:
+            results.append({
+                "id": item.id,
+                "title": item.title,
+                "content_type": item.content_type,
+                "tags": item.tags,
+                "project_id": item.project_id,
+                "created_at": item.created_at.isoformat()
+            })
+        
+        return {
+            "success": True,
+            "data": {
+                "items": results,
+                "count": len(results),
+                "offset": offset,
+                "limit": limit
             }
+        }
     except Exception as e:
         return {
             "success": False,
@@ -252,21 +251,20 @@ def delete_context(context_id: int) -> Dict[str, Any]:
         Dictionary with success status
     """
     try:
-        with get_db_context() as db:
-            service = ContextService(db)
-            success = service.delete_context_item(context_id)
-            
-            if not success:
-                return {
-                    "success": False,
-                    "error": "Context not found",
-                    "message": f"No context found with ID {context_id}"
-                }
-            
+        service = get_context_service()
+        success = service.delete_context_item(context_id)
+        
+        if not success:
             return {
-                "success": True,
-                "message": f"Context {context_id} deleted successfully"
+                "success": False,
+                "error": "Context not found",
+                "message": f"No context found with ID {context_id}"
             }
+        
+        return {
+            "success": True,
+            "message": f"Context {context_id} deleted successfully"
+        }
     except Exception as e:
         return {
             "success": False,
@@ -294,27 +292,26 @@ def create_project(
         Dictionary with success status and project details
     """
     try:
-        with get_db_context() as db:
-            service = ContextService(db)
-            
-            project_data = ContextProjectCreate(
-                id=project_id,
-                name=name,
-                description=description,
-                settings=settings or {}
-            )
-            
-            result = service.create_project(project_data)
-            
-            return {
-                "success": True,
-                "message": "Project created successfully",
-                "data": {
-                    "id": result.id,
-                    "name": result.name,
-                    "created_at": result.created_at.isoformat()
-                }
+        service = get_context_service()
+        
+        project_data = ContextProjectCreate(
+            id=project_id,
+            name=name,
+            description=description,
+            settings=settings or {}
+        )
+        
+        result = service.create_project(project_data)
+        
+        return {
+            "success": True,
+            "message": "Project created successfully",
+            "data": {
+                "id": result.id,
+                "name": result.name,
+                "created_at": result.created_at.isoformat()
             }
+        }
     except Exception as e:
         return {
             "success": False,
@@ -335,28 +332,27 @@ def list_projects(limit: int = 20, offset: int = 0) -> Dict[str, Any]:
         Dictionary with list of projects
     """
     try:
-        with get_db_context() as db:
-            service = ContextService(db)
-            projects = service.get_projects(limit=min(limit, 50), offset=offset)
-            
-            results = []
-            for project in projects:
-                results.append({
-                    "id": project.id,
-                    "name": project.name,
-                    "description": project.description,
-                    "created_at": project.created_at.isoformat()
-                })
-            
-            return {
-                "success": True,
-                "data": {
-                    "projects": results,
-                    "count": len(results),
-                    "offset": offset,
-                    "limit": limit
-                }
+        service = get_context_service()
+        projects = service.get_projects(limit=min(limit, 50), offset=offset)
+        
+        results = []
+        for project in projects:
+            results.append({
+                "id": project.id,
+                "name": project.name,
+                "description": project.description,
+                "created_at": project.created_at.isoformat()
+            })
+        
+        return {
+            "success": True,
+            "data": {
+                "projects": results,
+                "count": len(results),
+                "offset": offset,
+                "limit": limit
             }
+        }
     except Exception as e:
         return {
             "success": False,
