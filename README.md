@@ -11,16 +11,16 @@ or integrating it into a paid product — requires a commercial license from DEV
 
 A Docker-based application that stores context information locally and exposes a Model Context Protocol (MCP) server for integration with AI development tools like Cursor and Claude Desktop.
 
-## 🎯 Goal: "Bring Your Own Context"
+## Goal: "Bring Your Own Context"
 
-Cortex allows you to:
-- Store and manage context information locally in a Docker container
-- Search through your context items with advanced filtering
-- Organize contexts by projects
-- Expose context via MCP server for AI tools
-- Maintain full control over your data with persistent Docker volumes
+Cortex provides the following capabilities:
+- Local storage and management of context information in a Docker container
+- Advanced search functionality with multiple search modes
+- Project-based organization of context items
+- MCP server integration for AI development tools
+- Complete data control with persistent Docker volumes
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 cortex/
@@ -52,85 +52,85 @@ cortex/
 └── requirements.txt      # Python dependencies
 ```
 
-## 🚀 Features
+## Features
 
 ### Core Functionality
-- **Vector Database Storage**: LanceDB vector database with embeddings in persistent Docker volume
-- **Context Management**: Create, read, update, delete context items with automatic embedding generation
-- **Project Organization**: Group contexts by projects
-- **Advanced Search**: Three search modes - semantic, keyword, and hybrid search
+- **Vector Database Storage**: LanceDB vector database with embeddings stored in persistent Docker volumes
+- **Context Management**: Full CRUD operations for context items with automatic embedding generation
+- **Project Organization**: Hierarchical organization of contexts by projects
+- **Advanced Search**: Multiple search modes including semantic, keyword, and hybrid search
 - **Semantic Search**: AI-powered vector similarity search using sentence-transformers
-- **Tag System**: Categorize contexts with tags
-- **Persistent Data**: Data survives container restarts
+- **Tag System**: Flexible categorization system for context items
+- **Data Persistence**: All data persists across container restarts
 
-### 🔍 Advanced Search Capabilities
-- **Semantic Search**: Find context by meaning using AI embeddings (384-dimensional vectors)
+### Advanced Search Capabilities
+- **Semantic Search**: Meaning-based context discovery using AI embeddings (384-dimensional vectors)
 - **Keyword Search**: Traditional text-based search through titles and content
-- **Hybrid Search**: Combines semantic and keyword search with configurable weights
-- **Search Types**: Choose between semantic, keyword, or hybrid search modes
-- **Filtering**: Filter by project, content type, tags, and active status
-- **Performance**: Sub-second search results with execution time tracking
+- **Hybrid Search**: Intelligent combination of semantic and keyword search with configurable weights
+- **Search Modes**: Flexible selection between semantic, keyword, or hybrid search approaches
+- **Advanced Filtering**: Filter results by project, content type, tags, and active status
+- **Performance Optimization**: Sub-second search results with detailed execution time tracking
 
 ### MCP Server
-- **FastMCP Integration**: Modern MCP server implementation using FastMCP framework
-- **HTTP Support**: HTTP communication protocol
-- **7 MCP Tools**:
+- **FastMCP Integration**: Modern MCP server implementation using the FastMCP framework
+- **HTTP Protocol Support**: Full HTTP communication protocol compatibility
+- **Comprehensive Tool Set**: Seven MCP tools for complete context management:
   - `store_context` - Store new context information with metadata
-  - `retrieve_context` - Get specific context by ID
-  - `search_context` - Advanced search through stored context with filters
-  - `list_contexts` - List all context items with pagination
-  - `delete_context` - Remove context items
+  - `retrieve_context` - Retrieve specific context items by ID
+  - `search_context` - Advanced search through stored context with filtering
+  - `list_contexts` - List all context items with pagination support
+  - `delete_context` - Remove context items from storage
   - `create_project` - Create new projects for organization
-  - `list_projects` - List all projects with pagination
+  - `list_projects` - List all projects with pagination support
 - **MCP Resources**: Exposes context and project data as MCP resources
-- **Integrated Endpoints**: MCP server runs on same port as main application (`/mcp`)
+- **Integrated Architecture**: MCP server runs on the same port as the main application (`/mcp`)
 
 ### Web Interface
-- **Modern Vue.js 3 App**: Built with TypeScript and Vite
-- **Responsive Design**: Clean, modern interface
-- **4 Main Views**:
-  - **Dashboard**: Overview of stored contexts and statistics
-  - **Context Items**: Create, edit, and manage context items
-  - **Projects**: Organize contexts into projects
-  - **Settings**: App configuration and MCP client setup
-- **State Management**: Pinia for reactive state management
-- **Component Architecture**: Modular components (Header, Sidebar)
+- **Modern Vue.js 3 Application**: Built with TypeScript and Vite for optimal performance
+- **Responsive Design**: Clean, professional interface optimized for all devices
+- **Comprehensive Views**: Four main application views:
+  - **Dashboard**: Overview of stored contexts and system statistics
+  - **Context Items**: Complete context item management interface
+  - **Projects**: Project organization and management tools
+  - **Settings**: Application configuration and MCP client setup
+- **State Management**: Pinia for efficient reactive state management
+- **Modular Architecture**: Well-structured component system (Header, Sidebar, etc.)
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
-- **FastAPI** - Modern Python web framework
-- **LanceDB** - Vector database for embeddings and semantic search
-- **Sentence Transformers** - AI embeddings generation (all-MiniLM-L6-v2)
-- **PyTorch** - Deep learning framework for embeddings
-- **Pandas** - Data manipulation and analysis
-- **Uvicorn** - ASGI server
-- **FastMCP** - MCP server framework
+- **FastAPI** - Modern, high-performance Python web framework
+- **LanceDB** - Vector database optimized for embeddings and semantic search
+- **Sentence Transformers** - AI embeddings generation using all-MiniLM-L6-v2 model
+- **PyTorch** - Deep learning framework for embedding computations
+- **Pandas** - Data manipulation and analysis library
+- **Uvicorn** - High-performance ASGI server
+- **FastMCP** - Model Context Protocol server framework
 
 ### Frontend
-- **Vue.js 3** - Progressive JavaScript framework
-- **TypeScript** - Type-safe JavaScript
-- **Vite** - Fast build tool
-- **Pinia** - State management
+- **Vue.js 3** - Progressive JavaScript framework with Composition API
+- **TypeScript** - Type-safe JavaScript development
+- **Vite** - Fast build tool and development server
+- **Pinia** - Modern state management solution
 
 ### Infrastructure
-- **Docker** - Containerization
+- **Docker** - Application containerization
 - **Docker Compose** - Multi-container orchestration
-- **Persistent Volumes** - Data persistence
+- **Persistent Volumes** - Reliable data persistence
 
-## 📋 Prerequisites
+## Prerequisites
 
-- **Docker** 20.10+
-- **Docker Compose** 2.0+
+- **Docker** 20.10 or higher
+- **Docker Compose** 2.0 or higher
 - **Node.js** 20.19+ or 22.12+ (for frontend development)
 - **pnpm** (recommended) or npm (for frontend development)
 - **Python** 3.8+ (for local development)
-- **PyTorch** (automatically installed with requirements.txt)
-- **Sentence Transformers** (automatically installed with requirements.txt)
+- **PyTorch** (automatically installed via requirements.txt)
+- **Sentence Transformers** (automatically installed via requirements.txt)
 
-## 🚀 Quick Start
+## Quick Start
 
-### 🐳 Docker Development (Recommended)
+### Docker Development (Recommended)
 
 The easiest way to get started is with Docker:
 
@@ -143,12 +143,12 @@ cd cortex
 ./scripts/docker-dev.sh
 ```
 
-This will:
-1. Build the Vue.js frontend with `pnpm build-only`
-2. Copy frontend assets to FastAPI `app/assets/` directory
+This process will:
+1. Build the Vue.js frontend using `pnpm build-only`
+2. Copy frontend assets to the FastAPI `app/assets/` directory
 3. Build and start the containerized application
-4. Serve everything on http://localhost:8000
-5. Provide MCP server at http://localhost:8000/mcp
+4. Serve the application on http://localhost:8000
+5. Provide MCP server access at http://localhost:8000/mcp
 
 ### Manual Docker Setup
 
@@ -180,7 +180,7 @@ docker-compose -f docker-compose.dev.yml down
 docker-compose -f docker-compose.dev.yml down -v
 ```
 
-## 🔧 MCP Client Configuration
+## MCP Client Configuration
 
 ### Cursor IDE
 
@@ -215,12 +215,12 @@ Add to your Claude Desktop configuration:
 
 ### Important Notes
 
-- **MCP Server runs via HTTP**: The server runs as an HTTP endpoint at `http://127.0.0.1:8000/mcp`
-- **Docker networking**: Ensure Docker is running and the container is accessible on port 8000
-- **Database persistence**: Data is stored in Docker volume `cortex_data`
-- **Server must be running**: The Cortex application must be running for MCP clients to connect
+- **MCP Server HTTP Endpoint**: The server runs as an HTTP endpoint at `http://127.0.0.1:8000/mcp`
+- **Docker Networking**: Ensure Docker is running and the container is accessible on port 8000
+- **Database Persistence**: Data is stored in the Docker volume `cortex_data`
+- **Server Requirements**: The Cortex application must be running for MCP clients to connect
 
-## 📚 API Endpoints
+## API Endpoints
 
 ### Context Items
 - `POST /api/context/items` - Create context item with automatic embedding generation
@@ -261,14 +261,14 @@ Add to your Claude Desktop configuration:
 - `GET /projects` - Project management view
 - `GET /settings` - Application settings
 
-## 🗃️ Data Storage
+## Data Storage
 
 ### Docker Volume
 - **Location**: Docker volume `cortex_data`
-- **Type**: LanceDB vector database at `/data/lancedb/`
-- **Embeddings**: 384-dimensional vectors using all-MiniLM-L6-v2 model
-- **Persistence**: Data survives container restarts
-- **Backup**: Volume can be backed up using Docker volume commands
+- **Type**: LanceDB vector database stored at `/data/lancedb/`
+- **Embeddings**: 384-dimensional vectors generated using all-MiniLM-L6-v2 model
+- **Persistence**: All data persists across container restarts
+- **Backup**: Volume can be backed up using standard Docker volume commands
 
 ### Context Item Structure
 ```json
@@ -288,42 +288,42 @@ Add to your Claude Desktop configuration:
 }
 ```
 
-## 🎨 User Interface
+## User Interface
 
 ### Dashboard (`/`)
-- Overview of stored contexts and statistics
-- Quick access to recent items
-- MCP server status and health
-- Application information
+- Comprehensive overview of stored contexts and system statistics
+- Quick access to recently created items
+- MCP server status and health monitoring
+- Application information and system metrics
 
 ### Context Items (`/contexts`)
-- Create, edit, and delete context items
-- Rich content management
-- Tag assignment and management
-- Project association
-- Content type filtering
+- Complete context item management interface
+- Rich content editing and management capabilities
+- Tag assignment and management system
+- Project association and organization
+- Content type filtering and search
 
 ### Projects (`/projects`)
-- Create and manage projects
-- View project-specific contexts
-- Project statistics and metadata
-- Project settings and configuration
+- Project creation and management tools
+- Project-specific context viewing and organization
+- Project statistics and metadata display
+- Project settings and configuration options
 
 ### Settings (`/settings`)
-- Application configuration
-- MCP server settings and status
-- Database management
-- Connection guides for Cursor and Claude Desktop
+- Application configuration and preferences
+- MCP server settings and status monitoring
+- Database management and maintenance tools
+- Connection guides for Cursor and Claude Desktop integration
 
-## 🔐 Security & Privacy
+## Security & Privacy
 
-- **Local-first**: All data stored in Docker volume
-- **No cloud sync**: Complete data control
-- **Container isolation**: Application runs in isolated Docker container
-- **Local-only MCP server**: Only accessible from localhost
-- **Persistent storage**: Data survives container restarts
+- **Local-First Architecture**: All data stored locally in Docker volumes
+- **No Cloud Synchronization**: Complete data control and privacy
+- **Container Isolation**: Application runs in isolated Docker container environment
+- **Local-Only MCP Server**: Server accessible only from localhost for security
+- **Persistent Storage**: All data persists across container restarts
 
-## 🛠️ Development
+## Development
 
 ### Frontend Development
 
@@ -363,7 +363,7 @@ docker-compose -f docker-compose.dev.yml logs -f cortex
 docker-compose -f docker-compose.dev.yml exec cortex bash
 ```
 
-## 📦 Production Deployment
+## Production Deployment
 
 ### Docker Production Build
 
@@ -412,7 +412,7 @@ volumes:
     driver: local
 ```
 
-## 🛣️ Roadmap
+## Roadmap
 
 - [x] Core context storage system
 - [x] MCP server implementation
@@ -431,11 +431,11 @@ volumes:
 - [ ] Custom MCP tools
 - [ ] Multi-user support
 
-## 📄 License
+## License
 
 MIT License - See LICENSE file for details.
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -443,13 +443,13 @@ MIT License - See LICENSE file for details.
 4. Add tests if applicable
 5. Submit a pull request
 
-## 🆘 Support
+## Support
 
 - **Issues**: Create an issue on GitHub
 - **Documentation**: Check the built-in help system
 - **MCP Protocol**: See [MCP Specification](https://spec.modelcontextprotocol.io/)
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -479,11 +479,11 @@ docker volume inspect cortex_cortex_data
 docker run --rm -v cortex_cortex_data:/data -v $(pwd):/backup alpine tar czf /backup/cortex-backup.tar.gz -C /data .
 ```
 
-**Embedding model issues:**
-- First startup may take longer as the sentence-transformers model downloads (~80MB)
+**Embedding Model Issues:**
+- Initial startup may require additional time for sentence-transformers model download (~80MB)
 - Model is cached in Docker volume for faster subsequent starts
 - If embeddings fail, check Docker logs for model download errors
 
 ---
 
-**Happy context managing! 🧠**
+**Happy context managing!**
