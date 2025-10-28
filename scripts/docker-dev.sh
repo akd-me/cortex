@@ -19,7 +19,7 @@ docker-compose -f docker-compose.dev.yml down
 # Build frontend first
 echo "🖥️  Building Vue.js frontend..."
 cd akd.dev.fe
-pnpm build-only
+npm run build-only
 cd ..
 
 # Copy frontend assets to FastAPI
