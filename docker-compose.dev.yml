@@ -15,10 +15,10 @@ services:
       - APP_TITLE=Cortex Context Manager
       - APP_DESCRIPTION=Local context storage and retrieval system
       - APP_VERSION=1.0.0
+      - PYTHONDONTWRITEBYTECODE=1   # Disable .pyc files in development
     volumes:
-      - ./app:/app/app:ro            # App code (read-only for hot reload)
+      - ./app:/app/app               # App code (writable for hot reload)
       - cortex_data:/data            # Persistent data volume
-      - /app/app/__pycache__         # Exclude pycache from volume mount
     working_dir: /app
     restart: unless-stopped
     healthcheck:

@@ -124,6 +124,7 @@ cortex/
 - **Docker Compose** 2.0 or higher
 - **Node.js** 20.19+ or 22.12+ (for frontend development)
 - **pnpm** (recommended) or npm (for frontend development)
+  - Install pnpm: `npm install -g pnpm`
 - **Python** 3.8+ (for local development)
 - **PyTorch** (automatically installed via requirements.txt)
 - **Sentence Transformers** (automatically installed via requirements.txt)
